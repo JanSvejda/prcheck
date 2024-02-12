@@ -1,10 +1,19 @@
+group = "com.jsv"
+version = "1.0.0-SNAPSHOT"
+
 plugins {
     kotlin("jvm") version "1.9.0"
-    application
+    id("java-gradle-plugin")
 }
 
-group = "com.jsv"
-version = "1.0-SNAPSHOT"
+gradlePlugin {
+    plugins {
+        create("prcheck") {
+            id = "com.jsv.prcheck"
+            implementationClass = "com.jsv.GreetingPlugin"
+        }
+    }
+}
 
 repositories {
     mavenCentral()
@@ -20,8 +29,4 @@ tasks.test {
 
 kotlin {
     jvmToolchain(8)
-}
-
-application {
-    mainClass.set("MainKt")
 }
