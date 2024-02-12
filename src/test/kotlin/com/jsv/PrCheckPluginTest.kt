@@ -6,15 +6,15 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 
-class GreetingPluginTest {
+class PrCheckPluginTest {
 
     @Test
-    fun greeterPluginAddsGreetingTaskToProject() {
+    fun `plugin adds check task to project`() {
         val project: Project = ProjectBuilder.builder().build()
         project.pluginManager.apply("com.jsv.prcheck")
 
-        assertNotNull(project.plugins.getPlugin(GreetingPlugin::class.java))
+        assertNotNull(project.plugins.getPlugin(PrCheckPlugin::class.java))
 
-        assertTrue(project.tasks.getByName("hello") is GreetingTask)
+        assertTrue(project.tasks.getByName("check") is CheckTask)
     }
 }

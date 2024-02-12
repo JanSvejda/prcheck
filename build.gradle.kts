@@ -10,7 +10,7 @@ gradlePlugin {
     plugins {
         create("prcheck") {
             id = "com.jsv.prcheck"
-            implementationClass = "com.jsv.GreetingPlugin"
+            implementationClass = "com.jsv.PrCheckPlugin"
         }
     }
 }
