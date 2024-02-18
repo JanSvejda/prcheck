@@ -1,3 +1,5 @@
+
+
 group = "com.jsv"
 version = "1.0.0-SNAPSHOT"
 
@@ -19,14 +21,14 @@ repositories {
     mavenCentral()
 }
 
+kotlin {
+    jvmToolchain(8)
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-kotlin {
-    jvmToolchain(8)
 }
