@@ -4,33 +4,16 @@ import org.gradle.api.*
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-import java.net.URI
 
 class PrCheckPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-//        val prcheck = project.prCheck()
-//        project.tasks.register("prcheckAll", PrCheckTask::class.java) {
-//            it.checks.set(prcheck)
-//        }
         project.tasks.register("prcheck", PrCheckTask::class.java)
-        project.tasks.register("dw", Download::class.java)
     }
 }
 
-
-abstract class Download : DefaultTask() {
-    @get:Input
-    abstract val uri: Property<String>
-
-    @TaskAction
-    fun run() {
-        println("Downloading " + uri.get()) // Use the `uri` property
-    }
-}
-
-abstract interface PrCheckRule2: Named {
-    abstract fun getCondition(): Property<Boolean>
-    abstract fun getMessage(): Property<String>
+interface PrCheckRule : Named {
+    fun getCondition(): Property<Boolean>
+    fun getMessage(): Property<String>
 }
 
 abstract class PrCheckTask : DefaultTask() {
@@ -39,11 +22,16 @@ abstract class PrCheckTask : DefaultTask() {
         description = "Run all defined PR check tasks"
     }
 
-    @get:Input abstract val accessToken: Property<String>
-    @get:Input abstract val prNumber: Property<String>
-    @get:Input abstract val repository: Property<String>
-    @get:Input abstract val serverUrl: Property<String>
-    @get:Input abstract val rules: NamedDomainObjectContainer<PrCheckRule2>
+    @get:Input
+    abstract val accessToken: Property<String>
+    @get:Input
+    abstract val prNumber: Property<String>
+    @get:Input
+    abstract val repository: Property<String>
+    @get:Input
+    abstract val serverUrl: Property<String>
+    @get:Input
+    abstract val rules: NamedDomainObjectContainer<PrCheckRule>
 
     @TaskAction
     fun check() {

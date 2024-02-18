@@ -46,10 +46,10 @@ class PrCheckPluginTest {
         buildFile.appendText(
             """
             prcheck {
-                accessToken 'accessToken'
-                prNumber '2345'
-                repository 'app-repo'
-                serverUrl 'https://azdops.company.com/'
+                accessToken = 'accessToken'
+                prNumber = '2345'
+                repository = 'app-repo'
+                serverUrl = 'https://azdops.company.com/'
             }
             """
         )
@@ -58,7 +58,7 @@ class PrCheckPluginTest {
             .withPluginClasspath().build()
 
         assertContains(result.output, "Starting check task")
-        assertEquals(TaskOutcome.SUCCESS, result.task(":prcheckAll")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prcheck")?.outcome)
     }
 
     @Test
