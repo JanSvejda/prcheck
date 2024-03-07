@@ -1,9 +1,11 @@
 package com.jsv
 
 import org.gradle.api.*
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 class PrCheckPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -12,9 +14,20 @@ class PrCheckPlugin : Plugin<Project> {
 }
 
 interface PrCheckRule : Named {
-    fun getCondition(): Property<Boolean>
+    fun getCondition(): ListProperty<File>
     fun getMessage(): Property<String>
 }
+//
+//
+//abstract class PrCheckConditionTask : DefaultTask() {
+//    init {
+//        group = "verification"
+//        description = "Define a check condition"
+//    }
+//
+//    @get:OutputFiles
+//    abstract val affectedFiles: ConfigurableFileCollection
+//}
 
 abstract class PrCheckTask : DefaultTask() {
     init {
@@ -37,7 +50,7 @@ abstract class PrCheckTask : DefaultTask() {
     fun check() {
         println("Starting check task...")
         for (rule in rules) {
-            if (rule.getCondition().get()) {
+            if (rule.getCondition().get().isNotEmpty()) {
                 println("Check task is running for ${rule.name}")
                 println("Access token: ${accessToken.get()}")
                 println("PR number: ${prNumber.get()}")

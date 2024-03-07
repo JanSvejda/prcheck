@@ -99,4 +99,43 @@ class PrCheckPluginTest {
         assertEquals(TaskOutcome.SUCCESS, result.task(":prcheck")?.outcome)
     }
 
+
+    @Test
+    fun `can use check rules with dynamically resolved condition`() {
+        buildFile.appendText(
+            """
+            def allFiles = fileTree('.').files
+            
+            // task that returns all files in the project
+            def diffCheck = tasks.register('diffCheck') {
+                outputs.files().withPropertyName('affectedFiles')
+                doLast {
+                    affectedFiles.set(allFiles)
+                }
+            }
+            prcheck {
+                accessToken = 'accessToken'
+                prNumber = '2345'
+                repository = 'app-repo'
+                serverUrl = 'https://azdops.company.com/'
+                rules {
+                    create("rule1") {
+                        condition = diffCheck.affectedFiles
+                        message = "message1"
+                    }
+                }
+            }
+            """
+        )
+        val result = GradleRunner.create()
+            .withProjectDir(testProjectDir)
+            .withArguments("prcheck")
+            .withPluginClasspath().build()
+
+        assertContains(result.output, "Check task is running")
+        assertContains(result.output, "Running diff check")
+        assertContains(result.output, "message1")
+        assertFalse("message2" in result.output)
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prcheck")?.outcome)
+    }
 }
