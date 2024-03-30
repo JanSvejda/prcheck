@@ -54,7 +54,7 @@ class PrCheckPluginTest {
             """
         )
         val result = GradleRunner.create().withProjectDir(testProjectDir)
-            .withArguments("prcheck")
+            .withArguments("prcheck", "--debug")
             .withPluginClasspath().build()
 
         assertContains(result.output, "Starting check task")
@@ -89,7 +89,7 @@ class PrCheckPluginTest {
         )
         val result = GradleRunner.create()
             .withProjectDir(testProjectDir)
-            .withArguments("prcheck")
+            .withArguments("prcheck", "--debug")
             .withPluginClasspath().build()
 
         assertContains(result.output, "Check task is running")
@@ -104,19 +104,8 @@ class PrCheckPluginTest {
     fun `can use conditions on changed files`() {
         buildFile.appendText( // this is a gradle groovy file executed by the test framework
             """
-            // create file named file1.txt and file2.txt
-            file("file1.txt").write("content1")
             file("file2.txt").write("content2")
-            
-            // create directory named dir1 and dir2
-            file("dir1").mkdirs()
             file("dir2").mkdirs()
-            
-            // create file named file1.txt and file2.txt in dir1 and dir2
-            file("dir1/file1.txt").write("content1")
-            file("dir1/file2.txt").write("content2")
-            file("dir2/file1.txt").write("content1")
-            file("dir2/file2.txt").write("content2")
                
             prcheck {
                 accessToken = 'accessToken'
@@ -140,21 +129,17 @@ class PrCheckPluginTest {
         )
         val result = GradleRunner.create()
             .withProjectDir(testProjectDir)
-            .withArguments("prcheck")
+            .withArguments("prcheck", "--debug")
             .withPluginClasspath().build()
 
-        assertContains(result.output, "Check task is running")
+        assertContains(result.output, "Not a Git project")
+        assertContains(result.output, "Checking rule rule1")
         assertContains(result.output, "message1")
-        assertContains(result.output, "Checking file file1.txt...")
-        assertContains(result.output, "Checking file file2.txt...")
+        assertContains(result.output, "Found file2.txt")
 
+        assertContains(result.output, "Checking rule rule2")
         assertContains(result.output, "message2")
-        assertContains(result.output, "Checking directory dir1...")
-        assertContains(result.output, "Checking file dir1/file1.txt...")
-        assertContains(result.output, "Checking file dir1/file2.txt...")
-        assertContains(result.output, "Checking directory dir2...")
-        assertContains(result.output, "Checking file dir2/file1.txt...")
-        assertContains(result.output, "Checking file dir2/file2.txt...")
+        assertContains(result.output, "Found dir2")
         assertEquals(TaskOutcome.SUCCESS, result.task(":prcheck")?.outcome)
     }
 

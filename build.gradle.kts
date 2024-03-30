@@ -1,5 +1,3 @@
-
-
 group = "com.jsv"
 version = "1.0.0-SNAPSHOT"
 
@@ -26,6 +24,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r")
     testImplementation(kotlin("test"))
 }
 

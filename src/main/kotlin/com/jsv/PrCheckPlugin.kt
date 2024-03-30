@@ -1,7 +1,7 @@
 package com.jsv
 
 import org.gradle.api.*
-import org.gradle.api.file.FileTree
+import org.gradle.api.logging.Logger
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -28,41 +28,76 @@ abstract class PrCheckTask : DefaultTask() {
 
     @get:Input
     abstract val accessToken: Property<String>
+
     @get:Input
     abstract val prNumber: Property<String>
+
     @get:Input
     abstract val repository: Property<String>
+
     @get:Input
     abstract val serverUrl: Property<String>
+
     @get:Input
     abstract val rules: NamedDomainObjectContainer<PrCheckRule>
 
     @TaskAction
     fun check() {
-        println("Starting check task...")
-        for (rule in rules) {
-            if (rule.getEnabled().get()) {
-                println("Check task is running for ${rule.name}")
-                println("Access token: ${accessToken.get()}")
-                println("PR number: ${prNumber.get()}")
-                println("Repository: ${repository.get()}")
-                println("Server URL: ${serverUrl.get()}")
-                println("Enabled: ${rule.getEnabled().get()}")
-                println("Message: ${rule.getMessage().get()}")
-            }
-            for (file in rule.getWatched().get()) {
-                if (file.exists() && file.isFile) {
-                    println("Checking file ${file.name}...")
-                } else if (file.exists() && file.isDirectory) {
-                    println("Checking directory ${file.name}...")
-                    val fileTree: FileTree = project.fileTree(file)
-                    fileTree.forEach { fileInTree ->
-                        if (fileInTree.isFile) {
-                            println("Checking file ${file.name}/${fileInTree.name}...")
-                        }
-                    }
-                }
+        val log = project.logger
+        log.debug("Starting check task...")
+        log.debug("Access token: ${if (accessToken.get().isNotEmpty()) "****" else "empty"}")
+        log.debug("PR number: ${prNumber.get()}")
+        log.debug("Repository: ${repository.get()}")
+        log.debug("Server URL: ${serverUrl.get()}")
+        val ruleChecker = RuleCheckerFactory.create(project)
+        rules.filter { it.getEnabled().get() }.forEach { rule ->
+            ruleChecker.check(rule)
+        }
+    }
+}
+
+
+
+interface RuleChecker {
+    fun check(rule: PrCheckRule)
+}
+
+class RuleCheckerFactory {
+    companion object {
+        fun create(project: Project): RuleChecker {
+            val log = project.logger
+            return if (project.hasProperty("git")) {
+                GitPrCheckRule(project)
+            } else {
+                log.warn("Not a Git project, the check will only validate the existence of files.")
+                DefaultPrCheckRule(project)
             }
         }
+    }
+}
+
+class GitPrCheckRule(project: Project) : RuleChecker {
+    val log = project.logger
+
+    override fun check(rule: PrCheckRule) {
+        // check the diff between the current branch and the target branch of the PR
+        log.debug("Check task is running for ${rule.name}")
+    }
+}
+
+class DefaultPrCheckRule(project: Project) : RuleChecker {
+    private val log: Logger = project.logger
+
+    override fun check(rule: PrCheckRule) {
+        // check if the files or directories exist in the project directory
+        log.debug("Checking rule ${rule.name}")
+
+        val found = rule.getWatched().get().find { it.exists() }
+        if (found == null) {
+            log.debug("No files found for rule ${rule.name}")
+            return
+        }
+        log.debug("Found ${found.name}")
+        log.debug(rule.getMessage().get())
     }
 }
