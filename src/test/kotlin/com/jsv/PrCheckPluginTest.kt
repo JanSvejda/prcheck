@@ -72,15 +72,15 @@ class PrCheckPluginTest {
                 serverUrl = 'https://azdops.company.com/'
                 rules {
                     create("rule1") {
-                        condition = true
+                        enabled = true
                         message = "message1"
                     }
                     create("rule2") {
-                        condition = false
+                        enabled = false
                         message = "message2"
                     }
                     create("rule3") {
-                        condition = true
+                        enabled = true
                         message = "message3"
                     }
                 }
@@ -101,18 +101,23 @@ class PrCheckPluginTest {
 
 
     @Test
-    fun `can use check rules with dynamically resolved condition`() {
-        buildFile.appendText(
+    fun `can use conditions on changed files`() {
+        buildFile.appendText( // this is a gradle groovy file executed by the test framework
             """
-            def allFiles = fileTree('.').files
+            // create file named file1.txt and file2.txt
+            file("file1.txt").write("content1")
+            file("file2.txt").write("content2")
             
-            // task that returns all files in the project
-            def diffCheck = tasks.register('diffCheck') {
-                outputs.files().withPropertyName('affectedFiles')
-                doLast {
-                    affectedFiles.set(allFiles)
-                }
-            }
+            // create directory named dir1 and dir2
+            file("dir1").mkdirs()
+            file("dir2").mkdirs()
+            
+            // create file named file1.txt and file2.txt in dir1 and dir2
+            file("dir1/file1.txt").write("content1")
+            file("dir1/file2.txt").write("content2")
+            file("dir2/file1.txt").write("content1")
+            file("dir2/file2.txt").write("content2")
+               
             prcheck {
                 accessToken = 'accessToken'
                 prNumber = '2345'
@@ -120,8 +125,14 @@ class PrCheckPluginTest {
                 serverUrl = 'https://azdops.company.com/'
                 rules {
                     create("rule1") {
-                        condition = diffCheck.affectedFiles
+                        enabled = true
                         message = "message1"
+                        watched = files("file1.txt", "file2.txt")
+                    }
+                    create("rule2") {
+                        enabled = true
+                        message = "message2"
+                        watched = files("dir1", "dir2")
                     }
                 }
             }
@@ -133,9 +144,18 @@ class PrCheckPluginTest {
             .withPluginClasspath().build()
 
         assertContains(result.output, "Check task is running")
-        assertContains(result.output, "Running diff check")
         assertContains(result.output, "message1")
-        assertFalse("message2" in result.output)
+        assertContains(result.output, "Checking file file1.txt...")
+        assertContains(result.output, "Checking file file2.txt...")
+
+        assertContains(result.output, "message2")
+        assertContains(result.output, "Checking directory dir1...")
+        assertContains(result.output, "Checking file dir1/file1.txt...")
+        assertContains(result.output, "Checking file dir1/file2.txt...")
+        assertContains(result.output, "Checking directory dir2...")
+        assertContains(result.output, "Checking file dir2/file1.txt...")
+        assertContains(result.output, "Checking file dir2/file2.txt...")
         assertEquals(TaskOutcome.SUCCESS, result.task(":prcheck")?.outcome)
     }
+
 }

@@ -1,6 +1,7 @@
 package com.jsv
 
 import org.gradle.api.*
+import org.gradle.api.file.FileTree
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -14,20 +15,10 @@ class PrCheckPlugin : Plugin<Project> {
 }
 
 interface PrCheckRule : Named {
-    fun getCondition(): ListProperty<File>
+    fun getEnabled(): Property<Boolean>
+    fun getWatched(): ListProperty<File>
     fun getMessage(): Property<String>
 }
-//
-//
-//abstract class PrCheckConditionTask : DefaultTask() {
-//    init {
-//        group = "verification"
-//        description = "Define a check condition"
-//    }
-//
-//    @get:OutputFiles
-//    abstract val affectedFiles: ConfigurableFileCollection
-//}
 
 abstract class PrCheckTask : DefaultTask() {
     init {
@@ -50,14 +41,27 @@ abstract class PrCheckTask : DefaultTask() {
     fun check() {
         println("Starting check task...")
         for (rule in rules) {
-            if (rule.getCondition().get().isNotEmpty()) {
+            if (rule.getEnabled().get()) {
                 println("Check task is running for ${rule.name}")
                 println("Access token: ${accessToken.get()}")
                 println("PR number: ${prNumber.get()}")
                 println("Repository: ${repository.get()}")
                 println("Server URL: ${serverUrl.get()}")
-                println("Condition: ${rule.getCondition().get()}")
+                println("Enabled: ${rule.getEnabled().get()}")
                 println("Message: ${rule.getMessage().get()}")
+            }
+            for (file in rule.getWatched().get()) {
+                if (file.exists() && file.isFile) {
+                    println("Checking file ${file.name}...")
+                } else if (file.exists() && file.isDirectory) {
+                    println("Checking directory ${file.name}...")
+                    val fileTree: FileTree = project.fileTree(file)
+                    fileTree.forEach { fileInTree ->
+                        if (fileInTree.isFile) {
+                            println("Checking file ${file.name}/${fileInTree.name}...")
+                        }
+                    }
+                }
             }
         }
     }
